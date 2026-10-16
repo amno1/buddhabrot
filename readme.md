@@ -7,11 +7,11 @@
   <em>Buddhabrot rendered at 103.55 MP (12,944 × 8,000) with 100,000 samples/thread (1.6M target escaped orbits, 1.79 s)</em>
 </p>
 
-A high-performance Buddhabrot renderer written in Common Lisp (SBCL), using AVX-512 SIMD for orbit iteration, cycle detection for pruning trapped orbits, and a self-contained OpenEXR writer with SIMD-accelerated RLE compression. This is coded during three days with help of Gemini and DeepSeek, guided by tests and measurements. The purpose is to just create a demo and test to demonstrate that my new SBCL AVX-512ibackend works as intended. I learned about Buddhabrot really just few days ago from an online discussion on Reddit. The code here is developed from the scratch, and does not use their code.
+A high-performance Buddhabrot renderer written in Common Lisp (SBCL), using AVX-512 SIMD for orbit iteration, cycle detection for pruning trapped orbits, and a self-contained OpenEXR writer with SIMD-accelerated RLE compression. This is coded during three days with help of Gemini and DeepSeek, guided by tests and measurements. The purpose is to just create a demo as a test to demonstrate that my new SBCL AVX-512 backend works as intended. I learned about Buddhabrot really just few days ago from an online discussion on Reddit. The code here is developed from the scratch.
 
 Renders a 103.55-megapixel image (12,944 × 8,000) in roughly **0.2 seconds end-to-end** on a 16-core machine, of which ~0.09 s is orbit computation.
 
-Includes optional GPU-accelerated denoising via Intel Open Image Denoise (OIDN) and SBCL's built-in `sb-alien` FFI (no CFFI required).
+Includes optional GPU-accelerated denoising via Intel Open Image Denoise (OIDN).
 
 ---
 
@@ -29,22 +29,15 @@ The characteristic astronomical "nebula" structure emerges when millions of poin
 
 ---
 
-## Visual Comparison (Raw vs. Denoised)
-
-[![Raw Buddhabrot](buddhabrot-raw.png)](buddhabrot-raw.png) [![Denoised Buddhabrot](buddhabrot-denoised.png)](buddhabrot-denoised.png)
-[buddhabrot-raw.png](buddhabrot-raw.png) (`make buddha`)  [buddhabrot-denoised.png](buddhabrot-denoised.png) (`make buddha-denoise`)
-
----
-
 ## Requirements
 
-This project was generated in about three days to demonstrate that my AVX-512 backend for SBCL works. So obviously, you need SBCL built with AVX-512 support and an an AVX-512 capable CPU. Since there is no binary distributed, you will have to [download the source code](https://github.com/amno1/sbcl) and build one yourself. Be sure you build `sb-simd-512` worktree. You can just clone the repository and sh make.sh as you normally build SBCL.
+This project was generated to demonstrate the AVX-512 backend for SBCL. So obviously, you need SBCL built with AVX-512 support and an AVX-512 capable CPU. Since there is no binary distributed, you will have to [download the source code](https://github.com/amno1/sbcl) and build one yourself. Be sure you build `sb-simd-512` worktree. You can just clone the repository and sh make.sh as you normally build SBCL.
 
 The code unconditionally uses 16-wide `f32.16` (or 8-wide `f64.8`) floating-point operations and 64-wide `u8.64` integer intrinsics from sb-simd `avx512bw`. There is no scalar or avx2 fallback. Besides `sb-simd-avx512bw` for vector intrinsics and opmasks, we also use `sb-thread` for multi-threaded parallel workers and internal SBCL facilities (`sb-sys`, `sb-kernel`, `sb-int`) for pinned memory objects, SAP pointers, and floating-point trap controls. So yeah, this is completely unportable to other Common Lisp systems.
 
 Both the OpenEXR header writer and the SIMD RLE compression codec are implemented directly inside `buddha-512.lisp` without third-party dependencies.
 
-While reading about Buddhabrot and Monte Carlo sampling, there was some discussion about denoising the typical grainy images as random sampling (Monte Carlo) usually results in. I just stumbled upon [this Intel project](https://www.openimagedenoise.org/) with a neural net trained for the purpose, and thought I could try it and see how it works. I don't think I am happy with the result, but I have left it in for the fun, if someone wants to experiment with it. You will need to install **Intel Open Image Denoise (OIDN 2.x)** (`libOpenImageDenoise.so.2`). My laptop has a Nvidia card in it so I have NVIDIA GPU via CUDA as the default accelerator selected by OIDN, but you may change it to something else. I ahve used SBCL's native `sb-alien` foreign function interface so you don't need CFFI (everything is anyway SBCL specific, so why bother).
+While reading about Buddhabrot and Monte Carlo sampling, there was some discussion about denoising the typical grainy images as random sampling (Monte Carlo) usually results in. I just stumbled upon [this Intel project](https://www.openimagedenoise.org/) with a neural net trained for the purpose, and thought I could try it and see how it works. I don't think I am happy with the result, but I have left it in for the fun, if someone wants to experiment with it. You will need to install **Intel Open Image Denoise (OIDN 2.x)** (for `libOpenImageDenoise.so.2`). My laptop has an Nvidia card in it so I use NVIDIA GPU via CUDA as the default accelerator selected by OIDN, but you may change it to something else. I have used SBCL's native `sb-alien` foreign function interface so you don't need CFFI (everything is SBCL specific anyway, so why bother).
 
 ---
 
@@ -154,9 +147,7 @@ Five core techniques contribute to this performance:
 
 ---
 
-## API Reference
-
-### Primary Entry Point
+### Main Entry
 
 ```lisp
 (buddha:render
