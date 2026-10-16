@@ -120,12 +120,12 @@ Five core techniques contribute to this performance:
    (`image-x / width ≈ 6.2e-4`, while `f32` retains ~7 decimal digits)
    and doubles the lane throughput relative to `f64.8`.
 
-2. **Cycle Detection (K = 2520)**
-   Orbits falling into attracting basins of higher-period hyperbolic components loop
-   indefinitely and would otherwise march to the bailout limit of 100,000 steps.
-   By comparing `z_n` against `z_{n−2520}` every 2,520 steps, 94.7% of trapped orbits
-   are detected and pruned within their first comparison window. The interval is
-   `lcm(1..10) = 2520`, catching any period from 1 through 10 in a single vector comparison.
+2. **Cycle Detection (K = 2520)** Some orbits fall into an infinite loop and
+   would otherwise march to the bailout limit of 100,000 steps.  By comparing
+   `z_n` against `z_{n−2520}` every 2,520 steps, 94.7% of trapped orbits are
+   detected and pruned within their first comparison window. The interval is
+   `lcm(1..10) = 2520`, catching any period from 1 through 10 in a single vector
+   comparison.
 
 3. **Real-Axis Symmetry**
    The Mandelbrot set is invariant under complex conjugation ($z \leftrightarrow \bar{z}$).
