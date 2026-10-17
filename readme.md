@@ -9,7 +9,7 @@
 
 A high-performance Buddhabrot renderer written in Common Lisp (SBCL), using AVX-512 SIMD for orbit iteration, cycle detection for pruning trapped orbits, and a self-contained OpenEXR writer with SIMD-accelerated RLE compression. This is coded during three days with help of Gemini and DeepSeek, guided by tests and measurements. The purpose is to just create a demo as a test to demonstrate that my new SBCL AVX-512 backend works as intended. I learned about Buddhabrot really just few days ago from an online discussion on Reddit. The code here is developed from the scratch.
 
-Renders a 103.55-megapixel image (12,944 × 8,000) in roughly **0.2 seconds end-to-end** on a 16-core machine, of which ~0.09 s is orbit computation.
+Renders a 103.55-megapixel image (12,944 × 8,000) 5000 orbits/thread in roughly **0.2 seconds end-to-end** on a 10-core machine using 16 threads, of which ~0.09 s is orbit computation.
 
 Includes optional GPU-accelerated denoising via Intel Open Image Denoise (OIDN).
 
@@ -89,7 +89,7 @@ make compile
 
 ## Performance
 
-Measured on a 16-core machine (AMD Ryzen 9 / Zen 4), 80,000 sampled escaped orbits, canvas size 12,944 × 8,000 pixels (103.55 MP):
+Measured on a 16-core machine (Ryzen AI 9 365 / Zen 5), 80,000 sampled escaped orbits, canvas size 12,944 × 8,000 pixels (103.55 MP):
 
 | Phase                                                        | Time        |
 |:-------------------------------------------------------------|:------------|
