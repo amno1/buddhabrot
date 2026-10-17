@@ -106,7 +106,7 @@ Measured on a 16-core machine (Ryzen AI 9 365 / Zen 5), 80,000 sampled escaped o
 
 - **~1.8 M effective orbits/sec** (after real-axis symmetry doubling)
 - **~5.4 G Mandelbrot lane-iterations/sec** across all worker threads
-- **~38 GB/s single-core RLE scan** (~5 ms across 32 threads for the full 103.55 MP EXR image)
+- **~38 GB/s single-core RLE scan** (~5 ms across 16 threads for the full 103.55 MP EXR image)
 
 ---
 
