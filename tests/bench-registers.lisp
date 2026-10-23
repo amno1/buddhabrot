@@ -111,11 +111,11 @@
 ;;; Part 2: Real Buddhabrot Escaped Orbit Workers (Continuous Refill + Retrace)
 ;;; ============================================================================
 
-(defun simd-worker-f32-2x (target-hits rng array w h &optional atomic (cycle-detection t))
+(defun simd-worker-f32-2x (target-hits rng array w h &optional (cycle-detection t))
   (declare (type fixnum target-hits w h)
            (type buddha::xoshiro rng)
            (type buddha::image-buffer array)
-           (type boolean atomic cycle-detection)
+           (type boolean cycle-detection)
            (optimize (speed 3) (safety 0) (debug 0)))
   (let* ((cr-arr0 (make-array 16 :element-type 'single-float))
          (ci-arr0 (make-array 16 :element-type 'single-float))
@@ -210,11 +210,8 @@
                     (cond
                       ((logbitp i m0)
                        (when (<= buddha::+min-bailout+ steps buddha::+max-bailout+)
-                         (if atomic
-                             (buddha::trace-symmetric-orbit-f32-atomic (aref cr-arr0 i) (aref ci-arr0 i) steps
-                                                                       array w h px-mul x-off py-mul y-off)
-                             (buddha::trace-symmetric-orbit-f32 (aref cr-arr0 i) (aref ci-arr0 i) steps
-                                                                array w h px-mul x-off py-mul y-off))
+                         (buddha::trace-symmetric-orbit-f32 (aref cr-arr0 i) (aref ci-arr0 i) steps
+                                                            array w h px-mul x-off py-mul y-off)
                          (incf hits))
                        (multiple-value-bind (cr ci) (buddha::generate-candidate-f32 rng)
                          (setf (aref cr-arr0 i) cr (aref ci-arr0 i) ci
@@ -241,11 +238,8 @@
                     (cond
                       ((logbitp i m1)
                        (when (<= buddha::+min-bailout+ steps buddha::+max-bailout+)
-                         (if atomic
-                             (buddha::trace-symmetric-orbit-f32-atomic (aref cr-arr1 i) (aref ci-arr1 i) steps
-                                                                       array w h px-mul x-off py-mul y-off)
-                             (buddha::trace-symmetric-orbit-f32 (aref cr-arr1 i) (aref ci-arr1 i) steps
-                                                                array w h px-mul x-off py-mul y-off))
+                         (buddha::trace-symmetric-orbit-f32 (aref cr-arr1 i) (aref ci-arr1 i) steps
+                                                            array w h px-mul x-off py-mul y-off)
                          (incf hits))
                        (multiple-value-bind (cr ci) (buddha::generate-candidate-f32 rng)
                          (setf (aref cr-arr1 i) cr (aref ci-arr1 i) ci
@@ -279,11 +273,11 @@
                       zr-vec1 (sb-simd-avx512f:f32.16-aref zr-arr1 0)
                       zi-vec1 (sb-simd-avx512f:f32.16-aref zi-arr1 0)))))))))
 
-(defun simd-worker-f32-3x (target-hits rng array w h &optional atomic (cycle-detection t))
+(defun simd-worker-f32-3x (target-hits rng array w h &optional (cycle-detection t))
   (declare (type fixnum target-hits w h)
            (type buddha::xoshiro rng)
            (type buddha::image-buffer array)
-           (type boolean atomic cycle-detection)
+           (type boolean cycle-detection)
            (optimize (speed 3) (safety 0) (debug 0)))
   (let* ((cr-arr0 (make-array 16 :element-type 'single-float))
          (ci-arr0 (make-array 16 :element-type 'single-float))
@@ -407,11 +401,8 @@
                     (cond
                       ((logbitp i m0)
                        (when (<= buddha::+min-bailout+ steps buddha::+max-bailout+)
-                         (if atomic
-                             (buddha::trace-symmetric-orbit-f32-atomic (aref cr-arr0 i) (aref ci-arr0 i) steps
-                                                                       array w h px-mul x-off py-mul y-off)
-                             (buddha::trace-symmetric-orbit-f32 (aref cr-arr0 i) (aref ci-arr0 i) steps
-                                                                array w h px-mul x-off py-mul y-off))
+                         (buddha::trace-symmetric-orbit-f32 (aref cr-arr0 i) (aref ci-arr0 i) steps
+                                                            array w h px-mul x-off py-mul y-off)
                          (incf hits))
                        (multiple-value-bind (cr ci) (buddha::generate-candidate-f32 rng)
                          (setf (aref cr-arr0 i) cr (aref ci-arr0 i) ci
@@ -438,11 +429,8 @@
                     (cond
                       ((logbitp i m1)
                        (when (<= buddha::+min-bailout+ steps buddha::+max-bailout+)
-                         (if atomic
-                             (buddha::trace-symmetric-orbit-f32-atomic (aref cr-arr1 i) (aref ci-arr1 i) steps
-                                                                       array w h px-mul x-off py-mul y-off)
-                             (buddha::trace-symmetric-orbit-f32 (aref cr-arr1 i) (aref ci-arr1 i) steps
-                                                                array w h px-mul x-off py-mul y-off))
+                         (buddha::trace-symmetric-orbit-f32 (aref cr-arr1 i) (aref ci-arr1 i) steps
+                                                            array w h px-mul x-off py-mul y-off)
                          (incf hits))
                        (multiple-value-bind (cr ci) (buddha::generate-candidate-f32 rng)
                          (setf (aref cr-arr1 i) cr (aref ci-arr1 i) ci
@@ -469,11 +457,8 @@
                     (cond
                       ((logbitp i m2)
                        (when (<= buddha::+min-bailout+ steps buddha::+max-bailout+)
-                         (if atomic
-                             (buddha::trace-symmetric-orbit-f32-atomic (aref cr-arr2 i) (aref ci-arr2 i) steps
-                                                                       array w h px-mul x-off py-mul y-off)
-                             (buddha::trace-symmetric-orbit-f32 (aref cr-arr2 i) (aref ci-arr2 i) steps
-                                                                array w h px-mul x-off py-mul y-off))
+                         (buddha::trace-symmetric-orbit-f32 (aref cr-arr2 i) (aref ci-arr2 i) steps
+                                                            array w h px-mul x-off py-mul y-off)
                          (incf hits))
                        (multiple-value-bind (cr ci) (buddha::generate-candidate-f32 rng)
                          (setf (aref cr-arr2 i) cr (aref ci-arr2 i) ci

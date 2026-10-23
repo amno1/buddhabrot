@@ -160,7 +160,6 @@ Five core techniques contribute to this performance:
   :tone-mapping :logarithmic ; :logarithmic or :linear (half only)
   :precision :single         ; :single (f32.16) or :double (f64.8)
   :compression :rle          ; :rle (default) or :none
-  :atomic nil                ; T to use atomic-incf on pixel deposits
   :cycle-detection t         ; T to enable period-1..10 cycle pruning
   :denoise nil)              ; T to enable GPU OIDN denoising before EXR export
 ```

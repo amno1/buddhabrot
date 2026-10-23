@@ -276,7 +276,7 @@
         (h-1   (1- h)))
     (declare (type single-float zr zi)
              (type fixnum channel max-x max-y h-1))
-    (loop
+    (dotimes (k steps)
       (let ((mag2 (+ (* zr zr) (* zi zi))))
         (when (>= mag2 +escape-radius-sq-f32+)
           (return)))
@@ -293,11 +293,6 @@
         (setf zr next-zr
               zi next-zi)))))
 
-(declaim (inline trace-symmetric-orbit-f32-atomic))
-(defun trace-symmetric-orbit-f32-atomic (cr ci steps array w h px-mul x-off py-mul y-off)
-  "Retrace an escaped orbit (backward-compatible alias for plain incf)."
-  (trace-symmetric-orbit-f32 cr ci steps array w h px-mul x-off py-mul y-off))
-
 (declaim (inline trace-symmetric-orbit-f64))
 (defun trace-symmetric-orbit-f64 (cr ci steps array w h px-mul x-off py-mul y-off)
   "Retrace double-precision orbit using folded offsets, mirror, and plain incf."
@@ -313,7 +308,7 @@
         (h-1   (1- h)))
     (declare (type double-float zr zi)
              (type fixnum channel max-x max-y h-1))
-    (loop
+    (dotimes (k steps)
       (let ((mag2 (+ (* zr zr) (* zi zi))))
         (when (>= mag2 +escape-radius-sq+)
           (return)))
@@ -329,11 +324,6 @@
             (next-zi (+ (* 2.0d0 zr zi) ci)))
         (setf zr next-zr
               zi next-zi)))))
-
-(declaim (inline trace-symmetric-orbit-f64-atomic))
-(defun trace-symmetric-orbit-f64-atomic (cr ci steps array w h px-mul x-off py-mul y-off)
-  "Retrace double-precision orbit (backward-compatible alias for plain incf)."
-  (trace-symmetric-orbit-f64 cr ci steps array w h px-mul x-off py-mul y-off))
 
 (declaim (inline trace-symmetric-orbit))
 (defun trace-symmetric-orbit (cr ci steps array w h scale-x scale-y)
@@ -352,12 +342,12 @@
 ;;; AVX-512 Vector Engine (Continuous Lane Refill)
 ;;; ============================================================================
 
-(defun simd-worker-f32 (target-hits rng array w h &optional atomic (cycle-detection t))
+(defun simd-worker-f32 (target-hits rng array w h &optional (cycle-detection t))
   "Compute Mandelbrot orbits 16-wide using AVX-512 single-precision registers with cycle detection."
   (declare (type fixnum target-hits w h)
            (type xoshiro rng)
            (type image-buffer array)
-           (type boolean atomic cycle-detection)
+           (type boolean cycle-detection)
            (optimize (speed 3) (safety 0) (debug 0)))
   (let* ((cr-arr (make-array 16 :element-type 'single-float))
          (ci-arr (make-array 16 :element-type 'single-float))
@@ -425,11 +415,8 @@
                       ((logbitp i mask)
                        ;; Lane escaped!
                        (when (<= +min-bailout+ steps +max-bailout+)
-                         (if atomic
-                             (trace-symmetric-orbit-f32-atomic (aref cr-arr i) (aref ci-arr i) steps
-                                                               array w h px-mul x-off py-mul y-off)
-                             (trace-symmetric-orbit-f32 (aref cr-arr i) (aref ci-arr i) steps
-                                                        array w h px-mul x-off py-mul y-off))
+                         (trace-symmetric-orbit-f32 (aref cr-arr i) (aref ci-arr i) steps
+                                                    array w h px-mul x-off py-mul y-off)
                          (incf hits))
                        ;; Refill escaped lane with a new candidate
                        (multiple-value-bind (cr ci) (generate-candidate-f32 rng)
@@ -474,12 +461,12 @@
                       zr-vec (sb-simd-avx512f:f32.16-aref zr-arr 0)
                       zi-vec (sb-simd-avx512f:f32.16-aref zi-arr 0)))))))))
 
-(defun simd-worker-f64 (target-hits rng array w h &optional atomic (cycle-detection t))
+(defun simd-worker-f64 (target-hits rng array w h &optional (cycle-detection t))
   "Compute Mandelbrot orbits 8-wide using AVX-512 double-precision registers with cycle detection."
   (declare (type fixnum target-hits w h)
            (type xoshiro rng)
            (type image-buffer array)
-           (type boolean atomic cycle-detection)
+           (type boolean cycle-detection)
            (optimize (speed 3) (safety 0) (debug 0)))
   (let* ((cr-arr (make-array 8 :element-type 'double-float))
          (ci-arr (make-array 8 :element-type 'double-float))
@@ -547,11 +534,8 @@
                       ((logbitp i mask)
                        ;; Lane escaped!
                        (when (<= +min-bailout+ steps +max-bailout+)
-                         (if atomic
-                             (trace-symmetric-orbit-f64-atomic (aref cr-arr i) (aref ci-arr i) steps
-                                                               array w h px-mul x-off py-mul y-off)
-                             (trace-symmetric-orbit-f64 (aref cr-arr i) (aref ci-arr i) steps
-                                                        array w h px-mul x-off py-mul y-off))
+                         (trace-symmetric-orbit-f64 (aref cr-arr i) (aref ci-arr i) steps
+                                                    array w h px-mul x-off py-mul y-off)
                          (incf hits))
                        (multiple-value-bind (cr ci) (generate-candidate rng)
                          (setf (aref cr-arr i) cr
@@ -727,8 +711,8 @@
             (if (zerop m)
                 (incf cur 62)
                 (let ((offset (1- (integer-length (logand m (- m))))))
-                  (return-from find-3run-simd (min (+ cur offset) (+ pos 128)))))))
-    (let ((limit (min max-len (+ pos 128))))
+                  (return-from find-3run-simd (min (+ cur offset) (+ pos 127)))))))
+    (let ((limit (min max-len (+ pos 127))))
       (loop while (< cur limit)
             do (when (and (< (+ cur 2) max-len)
                           (= (aref arr cur) (aref arr (1+ cur)))
@@ -754,7 +738,7 @@
                     (aref out (1+ op)) (aref in pos))
               (incf op 2)
               (incf pos run-len))
-            (let* ((lit-end (find-3run-simd in pos in-length))
+            (let* ((lit-end (min (find-3run-simd in pos in-length) (+ pos 127)))
                    (n (- lit-end pos)))
               (declare (type fixnum lit-end n))
               (when (zerop n)
@@ -1272,13 +1256,12 @@ Supports :rle (default, EXR Type 1) and :none / :no-compression (Type 0)."
                     (tone-mapping :logarithmic)
                     (precision :single)
                     (compression :rle)
-                    (atomic nil)
                     (cycle-detection t)
                     (denoise nil))
   "Main entry point: Parallel AVX-512 Buddhabrot renderer with OpenEXR export and cycle detection."
   (declare (type fixnum threads samples-per-thread width height)
            (type keyword pixel-type precision compression)
-           (type boolean atomic cycle-detection))
+           (type boolean cycle-detection))
   (let* ((img-width width)
          (img-height height)
          (total-pixels (the fixnum (* (the fixnum (* img-width img-height)) 3)))
@@ -1295,10 +1278,9 @@ Supports :rle (default, EXR Type 1) and :none / :no-compression (Type 0)."
             threads samples-per-thread total-target)
     (format t "Resolution: ~D x ~D (~,2F Megapixels)~%"
             img-width img-height (/ (float (* img-width img-height) 1d0) 1000000.0d0))
-    (format t "Engine: AVX-512 ~A (~A lanes), Atomic Inc: ~A, Cycle Detection: ~A~%"
+    (format t "Engine: AVX-512 ~A (~A lanes), Cycle Detection: ~A~%"
             (if (eq precision :double) "f64.8 (Double-Precision)" "f32.16 (Single-Precision)")
             (if (eq precision :double) 8 16)
-            (if atomic "ENABLED" "DISABLED (Plain INC)")
             (if cycle-detection "ENABLED (K=2520)" "DISABLED"))
     (format t "Output: ~A, Pixel Type: ~A, Compression: ~A, Tone Mapping: ~A, Denoise: ~A~%"
             output pixel-type compression (if (eq pixel-type :half) tone-mapping "NONE (scene-referred)")
@@ -1316,12 +1298,12 @@ Supports :rle (default, EXR Type 1) and :none / :no-compression (Type 0)."
                                          (+ (* (get-internal-real-time) 1000003)
                                             (* thread-id 982451653)
                                             #x123456789ABCDEF)))
-                           (rng (make-fast-rng seed)))
+                            (rng (make-fast-rng seed)))
                       (sb-thread:make-thread
                        (lambda ()
                          (if (eq precision :double)
-                             (simd-worker-f64 samples-per-thread rng array img-width img-height atomic cycle-detection)
-                             (simd-worker-f32 samples-per-thread rng array img-width img-height atomic cycle-detection)))
+                             (simd-worker-f64 samples-per-thread rng array img-width img-height cycle-detection)
+                             (simd-worker-f32 samples-per-thread rng array img-width img-height cycle-detection)))
                        :name (format nil "buddha-worker-~D" thread-id))))))
         (mapc #'sb-thread:join-thread thread-list))
       (let* ((now (get-internal-real-time))
